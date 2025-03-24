@@ -96,7 +96,7 @@ export default function HomePage() {
   // Función para reproducir/pausar audio y configurar el visualizador
   const toggleAudio = useCallback(() => {
     if (!audioRef.current) return
-
+  
     if (audioPlaying) {
       audioRef.current.pause()
       setAudioPlaying(false)
@@ -106,10 +106,14 @@ export default function HomePage() {
         playPromise
           .then(() => {
             setAudioPlaying(true)
+  
             if (!audioContextRef.current && window.AudioContext) {
               audioContextRef.current = new AudioContext()
-              sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current)
-              sourceRef.current.connect(audioContextRef.current.destination)
+  
+              if (audioRef.current instanceof HTMLAudioElement) {
+                sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current)
+                sourceRef.current.connect(audioContextRef.current.destination)
+              }
             }
           })
           .catch((error) => {
@@ -121,6 +125,7 @@ export default function HomePage() {
       }
     }
   }, [audioPlaying])
+  
 
   return (
     <main ref={mainRef} className="min-h-screen bg-gradient-to-b from-[#1A1520] to-[#2D1F33] overflow-hidden relative">
