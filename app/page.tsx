@@ -182,7 +182,7 @@ export default function HomePage() {
           Nuestra melodía
         </h2>
         <p className="text-center text-pink-700 max-w-2xl mx-auto mb-8">
-          Esta visualización reacciona a nuestra canción. Cada onda representa un latido de mi corazón por ti.
+          Esta visualización reacciona a una cancion que te dedico con todo mi amor💖. Cada onda representa un latido de mi corazón por ti.
         </p>
         {audioPlaying ? (
           <AudioVisualizer audioRef={audioRef} audioContext={audioContextRef.current} sourceNode={sourceRef.current} />
