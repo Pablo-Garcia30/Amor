@@ -1,103 +1,212 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useEffect, useState, useRef, useCallback } from "react"
+import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { TextPlugin } from "gsap/TextPlugin"
+import Lenis from "@studio-freight/lenis"
+import dynamic from "next/dynamic"
+import { Button } from "@/components/ui/button"
+import FloatingHearts from "@/components/floating-hearts"
+import AudioVisualizer from "@/components/audio-visualizer"
+import SecretLetter from "@/components/secret-letter"
+import { Play, Pause } from "lucide-react"
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+// Import Three.js components dynamically sin SSR
+const GardenScene = dynamic(() => import("@/components/garden-scene"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[500px] bg-pink-50 flex items-center justify-center">
+      <div className="text-pink-600 text-lg animate-pulse">Cargando jardín mágico...</div>
     </div>
-  );
+  ),
+})
+
+export default function HomePage() {
+  const [showLetter, setShowLetter] = useState(false)
+  const [audioPlaying, setAudioPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const introTextRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
+
+  // Inicialización de animaciones y scroll suave con GSAP y Lenis
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger, TextPlugin)
+
+    // Inicializar Lenis para scroll suave
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      smoothWheel: true,
+    })
+
+    const raf = (time: number) => {
+      lenis.raf(time)
+      requestAnimationFrame(raf)
+    }
+    requestAnimationFrame(raf)
+
+    // Timeline GSAP para animación del Hero
+    const tl = gsap.timeline({ delay: 0.5 })
+    if (heroRef.current && introTextRef.current) {
+      tl.fromTo(
+        heroRef.current,
+        { opacity: 0, y: -50 },
+        { opacity: 1, y: 0, duration: 1, ease: "power2.out" }
+      )
+      tl.to(introTextRef.current, {
+        duration: 3,
+        text: "Juliette, he creado este jardín digital para ti, donde cada flor, estrella y nota musical refleja lo que siento. Explora y descubre todos sus secretos...",
+        ease: "none",
+      })
+    }
+
+    // Animaciones en scroll para cada sección
+    if (mainRef.current) {
+      const sections = mainRef.current.querySelectorAll("section")
+      sections.forEach((section) => {
+        gsap.fromTo(
+          section,
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            scrollTrigger: {
+              trigger: section,
+              start: "top 80%",
+              end: "bottom 20%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        )
+      })
+    }
+
+    return () => {
+      lenis.destroy()
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+    }
+  }, [])
+
+  // Función para reproducir/pausar audio y configurar el visualizador
+  const toggleAudio = useCallback(() => {
+    if (!audioRef.current) return
+
+    if (audioPlaying) {
+      audioRef.current.pause()
+      setAudioPlaying(false)
+    } else {
+      const playPromise = audioRef.current.play()
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setAudioPlaying(true)
+            if (!audioContextRef.current && window.AudioContext) {
+              audioContextRef.current = new AudioContext()
+              sourceRef.current = audioContextRef.current.createMediaElementSource(audioRef.current)
+              sourceRef.current.connect(audioContextRef.current.destination)
+            }
+          })
+          .catch((error) => {
+            console.error("Error al reproducir el audio:", error)
+            setAudioPlaying(false)
+          })
+      } else {
+        setAudioPlaying(true)
+      }
+    }
+  }, [audioPlaying])
+
+  return (
+    <main ref={mainRef} className="min-h-screen bg-gradient-to-b from-[#1A1520] to-[#2D1F33] overflow-hidden relative">
+      {/* Elemento de audio oculto */}
+      <audio ref={audioRef} loop src="/assets/Amor2.mp3" className="hidden" />
+
+      {/* Corazones flotantes */}
+      <FloatingHearts />
+
+      {/* Sección Hero con fondo parallax y animaciones */}
+      <section ref={heroRef} className="h-screen flex flex-col items-center justify-center px-4 relative z-20">
+        {/* Fondo parallax (puedes cambiar la imagen) */}
+        <div className="absolute inset-0 bg-[url('/assets/hero-bg.jpg')] bg-cover bg-center opacity-30 -z-10" />
+        <h1 className="text-4xl md:text-6xl font-bold text-pink-600 mb-6 text-center drop-shadow-lg">
+          Para el amor de mi alma
+        </h1>
+        <div ref={introTextRef} className="max-w-2xl text-lg md:text-xl text-center text-purple-800 mb-8 min-h-[100px] drop-shadow-md" />
+        <div className="flex gap-4">
+          <Button onClick={toggleAudio} className="bg-pink-500 hover:bg-pink-600 text-white transition-all duration-300 shadow-md">
+            {audioPlaying ? (
+              <>
+                <Pause className="mr-2 h-4 w-4" /> Pausar música
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" /> Reproducir música
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
+            variant="outline"
+            className="border-[#8B2942] text-[#D9A566] hover:bg-[#2D1F33] transition-all duration-300 shadow-md"
+          >
+            Explorar el jardín
+          </Button>
+        </div>
+      </section>
+
+      {/* Sección del jardín interactivo */}
+      <section className="py-16 px-4 relative z-20">
+        <h2 className="text-3xl font-bold text-center text-purple-700 mb-8 drop-shadow-md">
+          Nuestro jardín mágico
+        </h2>
+        <p className="text-center text-purple-600 max-w-2xl mx-auto mb-8">
+          Explora este jardín donde cada flor tiene un significado especial. Haz clic en las flores y estrellas para descubrir mensajes de amor.
+        </p>
+        <GardenScene />
+      </section>
+
+      {/* Sección del visualizador de audio con fondo animado */}
+      <section className="py-16 px-4 bg-[#2D1F33] relative z-20">
+        <h2 className="text-3xl font-bold text-center text-pink-600 mb-8 drop-shadow-md">
+          Nuestra melodía
+        </h2>
+        <p className="text-center text-pink-700 max-w-2xl mx-auto mb-8">
+          Esta visualización reacciona a nuestra canción. Cada onda representa un latido de mi corazón por ti.
+        </p>
+        {audioPlaying ? (
+          <AudioVisualizer audioRef={audioRef} audioContext={audioContextRef.current} sourceNode={sourceRef.current} />
+        ) : (
+          <div className="w-full h-[300px] flex items-center justify-center bg-[#2D1F33] rounded-lg">
+            <Button onClick={toggleAudio} className="bg-pink-500 hover:bg-pink-600 text-white transition-all duration-300 shadow-md">
+              <Play className="mr-2 h-4 w-4" /> Reproducir para ver la magia
+            </Button>
+          </div>
+        )}
+      </section>
+
+      {/* Sección de la carta secreta con animación refinada */}
+      <section className="py-16 px-4 relative z-20 mb-20">
+        <h2 className="text-3xl font-bold text-center text-purple-700 mb-8 drop-shadow-md">
+          Una carta para ti
+        </h2>
+        <p className="text-center text-purple-600 max-w-2xl mx-auto mb-8">
+          He escrito algo especial para ti. Haz clic para descubrirlo.
+        </p>
+        <div className="flex justify-center">
+          <SecretLetter isOpen={showLetter} onToggle={() => setShowLetter(!showLetter)} />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 text-center text-pink-700 bg-pink-50 relative z-20">
+        <p className="drop-shadow-md">Hecho con ❤️ para ti, con todo mi amor.</p>
+      </footer>
+    </main>
+  )
 }
